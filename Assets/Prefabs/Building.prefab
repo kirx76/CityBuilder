@@ -108,7 +108,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1.5, y: 1, z: 1.5}
+  m_Size: {x: 2, y: 1, z: 2}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &1595987942021529366
 MonoBehaviour:
@@ -137,4 +137,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingZonePrefab: {fileID: 5339540571817878252, guid: 04a61a2c50d053d43a5cb20557b94398, type: 3}
   defaultMaterial: {fileID: 2100000, guid: 38cbf2c410faf1946bf8884359f35dfd, type: 2}
-  highlightMaterial: {fileID: 2100000, guid: 00296d9f57f655046a4f6e1327f13d57, type: 2}
+  highlightMaterial: {fileID: 2100000, guid: fba4b5a6a20988440b8d1fcbdc535130, type: 2}

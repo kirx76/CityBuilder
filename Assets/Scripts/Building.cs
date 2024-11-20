@@ -18,8 +18,9 @@ public class Building : MonoBehaviour
 
     public void RemoveBuilding()
     {
+        var spawnPosition = new Vector3(transform.position.x, (float)0.0002, transform.position.z);
         // Создаём зону строительства на месте текущего здания
-        Instantiate(buildingZonePrefab, transform.position, Quaternion.identity);
+        Instantiate(buildingZonePrefab, spawnPosition, Quaternion.identity);
 
         // Удаляем здание
         Destroy(gameObject);

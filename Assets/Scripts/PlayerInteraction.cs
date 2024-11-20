@@ -19,21 +19,24 @@ public class PlayerInteraction : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.E))
         {
+            Debug.Log($"PRESS E");
             if (_currentBuildingZone != null && !buildMenu.createMenuPanel.activeSelf)
             {
+                Debug.Log("BUILDING ZONE");
                 buildMenu.OpenCreateMenu(_currentBuildingZone);
             }
 
-            if (_currentBuilding != null && !buildMenu.createMenuPanel.activeSelf)
+            if (_currentBuilding != null && !buildMenu.updateMenuPanel.activeSelf)
             {
+                Debug.Log("BUILDING");
                 buildMenu.OpenUpdateMenu(_currentBuilding);
             }
         }
 
-        if (_currentBuildingZone == null)
-        {
-            buildMenu.ExitMenu();
-        }
+        // if (_currentBuildingZone == null || _currentBuilding == null)
+        // {
+        //     buildMenu.ExitMenu();
+        // }
     }
     
     void OnTriggerEnter(Collider other)

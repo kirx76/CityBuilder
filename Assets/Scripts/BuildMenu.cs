@@ -56,7 +56,10 @@ public class BuildMenu : MonoBehaviour
 
     public void ExitMenu()
     {
+        Debug.Log($"EXIT MENU");
         ToggleMenu(false);
+        createMenuPanel.SetActive(false);
+        updateMenuPanel.SetActive(false);
     }
 
     public void Build(int buildingIndex)
@@ -110,9 +113,9 @@ public class BuildMenu : MonoBehaviour
         }
     }
 
-    public void RemoveBuilding(Building building)
+    public void RemoveBuilding()
     {
-        building.RemoveBuilding();
-        ToggleMenu(false);
+        _currentBuilding.RemoveBuilding();
+        ShowUpdateMenu(false);
     }
 }
