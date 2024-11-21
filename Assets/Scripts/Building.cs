@@ -3,13 +3,15 @@ using UnityEngine;
 public class Building : MonoBehaviour
 {
     public GameObject buildingZonePrefab; // Префаб зоны строительства
-    
+
     public Material defaultMaterial;
     public Material highlightMaterial;
-    
+
     private Renderer _renderer;
     private bool _playerNearby = false;
-    
+
+    public int cost;
+
     void Start()
     {
         _renderer = GetComponent<Renderer>();
@@ -22,12 +24,15 @@ public class Building : MonoBehaviour
         // Создаём зону строительства на месте текущего здания
         Instantiate(buildingZonePrefab, spawnPosition, Quaternion.identity);
 
+        int refundAmount = cost / 2;
+        PlayerEconomy.instance.AddMoney(refundAmount);
+
         // Удаляем здание
         Destroy(gameObject);
 
-        Debug.Log("Building removed and zone restored!");
+        Debug.Log("Building removed and zone restored! Also money returned");
     }
-    
+
     void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
@@ -45,7 +50,7 @@ public class Building : MonoBehaviour
             _renderer.material = defaultMaterial;
         }
     }
-    
+
     public bool IsPlayerNearby()
     {
         return _playerNearby;

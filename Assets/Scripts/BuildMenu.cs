@@ -1,101 +1,46 @@
 using UnityEngine;
+using UnityEngine.UI;
+using System.Collections.Generic;
+using System.Linq;
+using TMPro;
 
 public class BuildMenu : MonoBehaviour
 {
-    public GameObject[] buildingPrefabs;
-    
-    public GameObject createMenuPanel;
-    public GameObject updateMenuPanel;
-    
-    private BuildingZone _currentBuildingZone;
-    private Building _currentBuilding;
-    
-    public void OpenCreateMenu(BuildingZone zone)
-    {
-        _currentBuildingZone = zone;
+    public GameObject buildMenuPanelPrefab;
+    public GameObject buttonPrefab;
 
-        ShowCreateMenu(true);
-    }
+    public List<BuildingData> buildingList; // Список зданий
 
-    public void OpenUpdateMenu(Building building)
-    {
-        _currentBuilding = building;
+    public GameObject buildMenuPanel;
 
-        ShowUpdateMenu(true);
-    }
+    readonly List<GameObject> _createdButtons = new List<GameObject>();
 
-    private void ShowCreateMenu(bool show)
-    {
-        createMenuPanel.SetActive(show);
-        
-        ToggleMenu(show);
-    }
-    
-    private void ShowUpdateMenu(bool show)
-    {
-        updateMenuPanel.SetActive(show);
-        
-        ToggleMenu(show);
-    }
+    BuildingZone _currentBuildingZone;
 
-    void Update()
+    public static BuildMenu Instance { get; private set; }
+
+    void Awake()
     {
-        if (Input.GetKeyDown(KeyCode.E))
+        if (Instance != null && Instance != this)
         {
-            if (_currentBuildingZone != null && _currentBuildingZone.IsPlayerNearby())
-            {
-                ShowCreateMenu(true);
-            }
-            
-            if (_currentBuilding != null && _currentBuilding.IsPlayerNearby())
-            {
-                ShowUpdateMenu(true);
-            }
+            Destroy(gameObject);
+            return;
         }
-    }
 
-    public void ExitMenu()
-    {
-        Debug.Log($"EXIT MENU");
-        ToggleMenu(false);
-        createMenuPanel.SetActive(false);
-        updateMenuPanel.SetActive(false);
-    }
+        Instance = this;
 
-    public void Build(int buildingIndex)
-    {
-        if (_currentBuildingZone != null)
+        if (buildMenuPanel != null && buildMenuPanel != buildMenuPanelPrefab)
         {
-            Debug.Log($"Building {buildingIndex} in zone {_currentBuildingZone.name}");
-            
-            // Проверяем размер зоны и здания
-            GameObject selectedBuilding = buildingPrefabs[buildingIndex];
-            Vector3 buildingSize = selectedBuilding.GetComponent<Renderer>().bounds.size;
-            Vector3 zoneSize = _currentBuildingZone.GetComponent<Renderer>().bounds.size;
+            Destroy(buildMenuPanel);
+            return;
+        }
 
-            if (buildingSize.x <= zoneSize.x && buildingSize.z <= zoneSize.z)
-            {
-                Vector3 spawnPosition = _currentBuildingZone.transform.position + Vector3.up * (buildingSize.y / 2);
-                Instantiate(selectedBuilding, spawnPosition, Quaternion.identity);
-                
-                Destroy(_currentBuildingZone.gameObject);
-                _currentBuildingZone = null;
-                
-                Debug.Log($"Building {selectedBuilding.name} placed at {spawnPosition}");
-                ShowCreateMenu(false);
-            }
-            else
-            {
-                Debug.LogWarning("Building is too large for this zone!");
-            }
-        }
-        else
-        {
-            Debug.LogWarning("No building zone available!");
-        }
+        buildMenuPanel = Instantiate(buildMenuPanelPrefab, transform);
+
+        buildMenuPanel.SetActive(false);
     }
 
-    private static void ToggleMenu(bool show)
+    static void ToggleMenu(bool show)
     {
         if (show)
         {
@@ -113,9 +58,154 @@ public class BuildMenu : MonoBehaviour
         }
     }
 
-    public void RemoveBuilding()
+    void Start()
     {
-        _currentBuilding.RemoveBuilding();
-        ShowUpdateMenu(false);
+        GenerateButtons();
+    }
+
+    void GenerateButtons()
+    {
+        Debug.Log(buildMenuPanel);
+        Debug.Log(buildMenuPanel.transform);
+
+        var exitButton = buildMenuPanel.transform.Find("ExitButton").GetComponent<Button>();
+
+        if (exitButton == null)
+        {
+            Debug.LogError("Build menu panel is missing the exit button.");
+            return;
+        }
+
+        exitButton.onClick.AddListener(ExitMenu);
+
+        foreach (var button in _createdButtons.Where(button => button != null))
+        {
+            Destroy(button);
+        }
+
+        _createdButtons.Clear();
+
+        if (buildingList == null || buildingList.Count == 0)
+        {
+            Debug.LogWarning("Building list is empty or null.");
+            return;
+        }
+
+        // Получение ссылки на объект Content
+        var buildings = buildMenuPanel.transform.Find("Buildings");
+        if (buildings == null)
+        {
+            Debug.LogError("Buildings object not found.");
+            return;
+        }
+
+        var viewport = buildings.Find("Viewport");
+        if (viewport == null)
+        {
+            Debug.LogError("Viewport object not found.");
+            return;
+        }
+
+        var content = viewport.Find("Content");
+        if (content == null)
+        {
+            Debug.LogError("Content object not found.");
+            return;
+        }
+
+        foreach (var buildingData in buildingList)
+        {
+            if (buttonPrefab == null)
+            {
+                Debug.LogWarning("Button prefab is null.");
+                return;
+            }
+
+            var button = Instantiate(buttonPrefab, content);
+            if (button == null)
+            {
+                Debug.LogError("Failed to instantiate button prefab.");
+                continue;
+            }
+
+            _createdButtons.Add(button);
+
+            var btnComponent = button.GetComponent<Button>();
+            if (btnComponent == null)
+            {
+                Debug.LogError("Button prefab is missing the Button component.");
+                continue;
+            }
+            btnComponent.onClick.AddListener(() => OnBuildingSelected(buildingData));
+
+            var cost = buildingData.prefab.GetComponent<Building>().cost;
+            var buttonText = button.transform.Find("Text (TMP)")?.GetComponent<TMP_Text>();
+            if (buttonText != null)
+            {
+                buttonText.text = $"{buildingData.name}: {cost} $";
+            }
+            else
+            {
+                Debug.LogWarning("Button prefab is missing a TMP_Text component.");
+            }
+
+            var icon = button.transform.Find("Icon").GetComponent<Image>();
+            if (icon != null && buildingData.icon != null)
+            {
+                icon.sprite = buildingData.icon;
+            }
+
+            // Проверка стоимости
+            if (PlayerEconomy.instance.money < cost)
+            {
+                btnComponent.interactable = false;
+            }
+        }
+    }
+
+    void OnBuildingSelected(BuildingData buildingData)
+    {
+        var cost = buildingData.prefab.GetComponent<Building>().cost;
+
+        if (!PlayerEconomy.instance.SpendMoney(cost))
+            return;
+
+        Debug.Log($"Building selected: {buildingData.name}");
+
+        _currentBuildingZone.Build(buildingData.prefab);
+    }
+
+    public void RefreshButtons()
+    {
+        foreach (var button in _createdButtons)
+        {
+            var btnComponent = button.GetComponent<Button>();
+            if (btnComponent == null)
+                continue;
+
+            var buildingData = buildingList[_createdButtons.IndexOf(button)];
+            var cost = buildingData.prefab.GetComponent<Building>().cost;
+
+            btnComponent.interactable = PlayerEconomy.instance.money >= cost;
+        }
+    }
+
+    public void ShowMenu(bool show)
+    {
+        buildMenuPanel.SetActive(show);
+
+        ToggleMenu(show);
+    }
+
+    public void SetBuildingZone(BuildingZone zone)
+    {
+        _currentBuildingZone = zone;
+    }
+
+    public void ExitMenu()
+    {
+        buildMenuPanel.SetActive(false);
+
+        ToggleMenu(false);
     }
 }
